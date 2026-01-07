@@ -296,8 +296,32 @@
             <h2>🎯 法官配置游戏</h2>
             
             <div class="input-group">
-                <label>玩家人数</label>
-                <input type="number" id="player-count" min="6" max="20" value="10">
+                <label>发牌模式</label>
+                <select id="deal-mode" onchange="toggleDealMode()">
+                    <option value="auto">自动随机发牌（推荐）</option>
+                    <option value="manual">手动配置角色</option>
+                </select>
+            </div>
+
+            <div id="auto-mode-area">
+                <div class="input-group">
+                    <label>玩家人数</label>
+                    <input type="number" id="player-count" min="6" max="20" value="10">
+                </div>
+            </div>
+
+            <div id="manual-mode-area" style="display: none;">
+                <div class="alert alert-info">
+                    手动模式：自己选择角色配置，系统随机分配。
+                </div>
+                <div class="input-group">
+                    <label>玩家人数</label>
+                    <input type="number" id="player-count-manual" min="6" max="20" value="10">
+                </div>
+                <div class="input-group">
+                    <label>角色配置（每人2张牌）</label>
+                    <div id="role-selector"></div>
+                </div>
             </div>
 
             <div class="input-group">
@@ -329,6 +353,14 @@
                 <h3>📊 玩家选择状态</h3>
                 <div id="status-table"></div>
                 <button class="btn btn-primary" onclick="refreshStatus()">🔄 刷新状态</button>
+                
+                <div style="margin-top: 30px; border-top: 2px solid #ddd; padding-top: 20px;">
+                    <h3>⚙️ 法官手动设置（玩家无法操作时使用）</h3>
+                    <div class="alert alert-info">
+                        如果某些玩家无法使用手机或操作有困难，法官可以在这里直接为他们设置身份。
+                    </div>
+                    <div id="manual-setup-area"></div>
+                </div>
             </div>
         </div>
 
@@ -443,6 +475,97 @@
             topCard: null,
             bottomCard: null
         };
+        let selectedRolesList = []; // 用于手动模式的角色列表
+
+        // 切换发牌模式
+        function toggleDealMode() {
+            const mode = document.getElementById('deal-mode').value;
+            
+            if (mode === 'auto') {
+                document.getElementById('auto-mode-area').style.display = 'block';
+                document.getElementById('manual-mode-area').style.display = 'none';
+            } else {
+                document.getElementById('auto-mode-area').style.display = 'none';
+                document.getElementById('manual-mode-area').style.display = 'block';
+                renderRoleSelector();
+            }
+        }
+
+        // 渲染角色选择器
+        function renderRoleSelector() {
+            let html = '';
+            
+            // 狼人阵营
+            html += '<h4>狼人阵营</h4>';
+            html += addRoleCheckbox('wolf', 2);
+            html += addRoleCheckbox('wolfKing', 0);
+            html += addRoleCheckbox('hiddenWolf', 0);
+            html += addRoleCheckbox('wolfBeauty', 0);
+            
+            // 神职
+            html += '<h4>神职</h4>';
+            html += addRoleCheckbox('seer', 1);
+            html += addRoleCheckbox('witch', 1);
+            html += addRoleCheckbox('hunter', 1);
+            html += addRoleCheckbox('guard', 1);
+            html += addRoleCheckbox('cupid', 0);
+            html += addRoleCheckbox('thief', 0);
+            html += addRoleCheckbox('wildChild', 0);
+            
+            // 村民
+            html += '<h4>平民</h4>';
+            html += addRoleCheckbox('villager', 0);
+            
+            html += '<div style="margin-top: 10px;"><strong>总计张数：</strong><span id="total-cards">0</span></div>';
+            
+            document.getElementById('role-selector').innerHTML = html;
+            updateTotalCards();
+        }
+
+        // 添加角色复选框
+        function addRoleCheckbox(roleId, defaultCount) {
+            const role = ROLES[roleId];
+            return `
+                <div style="margin: 5px 0;">
+                    <label style="display: inline-block; width: 150px;">${role.emoji} ${role.name}</label>
+                    <input type="number" id="role-${roleId}" min="0" max="20" value="${defaultCount}" 
+                           onchange="updateTotalCards()" style="width: 60px;">
+                </div>
+            `;
+        }
+
+        // 更新总卡数
+        function updateTotalCards() {
+            let total = 0;
+            selectedRolesList = [];
+            
+            Object.keys(ROLES).forEach(roleId => {
+                const input = document.getElementById(`role-${roleId}`);
+                if (input) {
+                    const count = parseInt(input.value) || 0;
+                    for (let i = 0; i < count; i++) {
+                        selectedRolesList.push(roleId);
+                        total++;
+                    }
+                }
+            });
+            
+            const totalSpan = document.getElementById('total-cards');
+            if (totalSpan) {
+                totalSpan.textContent = total;
+                
+                const playerCount = parseInt(document.getElementById('player-count-manual').value) || 10;
+                const needed = playerCount * 2;
+                
+                if (total !== needed) {
+                    totalSpan.style.color = 'red';
+                    totalSpan.textContent += ` (需要${needed}张)`;
+                } else {
+                    totalSpan.style.color = 'green';
+                    totalSpan.textContent += ' ✓';
+                }
+            }
+        }
 
         // 生成随机密码
         function generatePassword() {
@@ -592,6 +715,7 @@
                 const data = result.get('data');
                 const selections = data.selections || {};
                 const playerCount = data.playerCount;
+                const distributions = data.distributions;
                 
                 let html = '<table><tr><th>号码</th><th>状态</th><th>选择</th></tr>';
                 let confirmed = 0;
@@ -615,9 +739,102 @@
                 }
                 
                 document.getElementById('status-table').innerHTML = html;
+                
+                // 渲染法官手动设置区域
+                renderManualSetup(data, result);
             } catch (error) {
                 console.error('刷新失败:', error);
                 alert('❌ 刷新失败：' + error.message);
+            }
+        }
+
+        // 渲染法官手动设置区域
+        function renderManualSetup(data, gameObject) {
+            const playerCount = data.playerCount;
+            const distributions = data.distributions;
+            const selections = data.selections || {};
+            
+            let html = '';
+            
+            for (let i = 1; i <= playerCount; i++) {
+                const dist = distributions[i];
+                const selection = selections[i];
+                const cards = dist.cards;
+                
+                html += `<div class="card" style="margin: 10px 0;">`;
+                html += `<strong>${i}号玩家</strong> - 分到的牌：`;
+                cards.forEach(r => {
+                    const role = ROLES[r];
+                    html += `<span class="role-card ${role.camp === 'wolf' ? 'wolf' : 'good'}">${role.emoji} ${role.name}</span>`;
+                });
+                
+                if (selection && selection.confirmed) {
+                    html += `<div style="margin-top: 10px; color: green;">✅ 已选择：上牌 ${ROLES[selection.top].name}，下牌 ${ROLES[selection.bottom].name}</div>`;
+                } else {
+                    html += `<div style="margin-top: 10px;">`;
+                    html += `<label>上牌：</label>`;
+                    html += `<select id="judge-top-${i}" style="margin: 0 10px;">`;
+                    html += `<option value="">请选择</option>`;
+                    cards.forEach(r => {
+                        html += `<option value="${r}">${ROLES[r].emoji} ${ROLES[r].name}</option>`;
+                    });
+                    html += `</select>`;
+                    
+                    html += `<label>下牌：</label>`;
+                    html += `<select id="judge-bottom-${i}" style="margin: 0 10px;">`;
+                    html += `<option value="">请选择</option>`;
+                    cards.forEach(r => {
+                        html += `<option value="${r}">${ROLES[r].emoji} ${ROLES[r].name}</option>`;
+                    });
+                    html += `</select>`;
+                    
+                    html += `<button class="btn btn-success" onclick="judgeSetPlayer(${i}, '${data.sessionId}')">保存</button>`;
+                    html += `</div>`;
+                }
+                
+                html += `</div>`;
+            }
+            
+            document.getElementById('manual-setup-area').innerHTML = html;
+            
+            // 保存gameObject供后续使用
+            window.currentGameObject = gameObject;
+        }
+
+        // 法官设置玩家身份
+        async function judgeSetPlayer(playerNum, sessionId) {
+            const topSelect = document.getElementById(`judge-top-${playerNum}`);
+            const bottomSelect = document.getElementById(`judge-bottom-${playerNum}`);
+            
+            const topCard = topSelect.value;
+            const bottomCard = bottomSelect.value;
+            
+            if (!topCard || !bottomCard) {
+                alert('❌ 请选择上牌和下牌！');
+                return;
+            }
+            
+            if (!confirm(`确认为${playerNum}号设置：\n上牌：${ROLES[topCard].name}\n下牌：${ROLES[bottomCard].name}？`)) {
+                return;
+            }
+            
+            try {
+                const data = window.currentGameObject.get('data');
+                data.selections[playerNum] = {
+                    top: topCard,
+                    bottom: bottomCard,
+                    confirmed: true,
+                    judgeSet: true // 标记为法官设置
+                };
+                
+                window.currentGameObject.set('data', data);
+                await window.currentGameObject.save();
+                
+                alert('✅ 设置成功！');
+                refreshStatus();
+            } catch (error) {
+                console.error('保存失败:', error);
+                alert('❌ 保存失败：' + error.message);
             }
         }
 
@@ -747,10 +964,7 @@
                 return;
             }
 
-            if (topCard === bottomCard) {
-                alert('❌ 上牌和下牌不能相同！');
-                return;
-            }
+            // 允许上下牌相同（如两张村民）
 
             const topRole = ROLES[topCard];
             const bottomRole = ROLES[bottomCard];
