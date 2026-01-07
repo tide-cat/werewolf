@@ -832,11 +832,10 @@ function renderAssignSection() {
         `;
         container.appendChild(playerLinkDiv);
         
-        // 设置玩家端URL（玩家端应当是 player.html，并携带 session 参数）
-        const baseUrl = window.location.origin + window.location.pathname.replace(/[^\/]*$/, '');
+        // 设置玩家端URL
+        const baseUrl = window.location.origin + window.location.pathname.replace(/judge\.html?$/,'');
         const playerUrl = baseUrl + 'player.html?session=' + encodeURIComponent(gameState.sessionId || '');
-        const playerUrlEl = document.getElementById('player-url');
-        if (playerUrlEl) playerUrlEl.textContent = playerUrl;
+        document.getElementById('player-url').textContent = playerUrl;
         
         // 玩家状态显示区域
         const statusDiv = document.createElement('div');
