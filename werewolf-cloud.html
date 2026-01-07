@@ -1,0 +1,827 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>双身份狼人杀 - 云端版</title>
+    
+    <!-- LeanCloud SDK -->
+    <script src="https://cdn.jsdelivr.net/npm/leancloud-storage@4.15.2/dist/av-min.js"></script>
+    
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Microsoft YaHei', Arial, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+
+        .header {
+            background: white;
+            padding: 20px;
+            border-radius: 10px;
+            margin-bottom: 20px;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+            text-align: center;
+        }
+
+        .header h1 {
+            color: #333;
+            margin-bottom: 10px;
+        }
+
+        .mode-selector {
+            display: flex;
+            gap: 20px;
+            justify-content: center;
+            margin-top: 20px;
+        }
+
+        .mode-btn {
+            padding: 15px 40px;
+            font-size: 18px;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: all 0.3s;
+            font-weight: bold;
+        }
+
+        .mode-btn.judge {
+            background: #3498db;
+            color: white;
+        }
+
+        .mode-btn.player {
+            background: #e74c3c;
+            color: white;
+        }
+
+        .mode-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 8px rgba(0,0,0,0.2);
+        }
+
+        .section {
+            display: none;
+            background: white;
+            padding: 30px;
+            border-radius: 10px;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+        }
+
+        .section.active {
+            display: block;
+        }
+
+        .btn {
+            padding: 12px 24px;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 16px;
+            margin: 5px;
+            transition: all 0.3s;
+        }
+
+        .btn-primary {
+            background: #3498db;
+            color: white;
+        }
+
+        .btn-success {
+            background: #27ae60;
+            color: white;
+        }
+
+        .btn-danger {
+            background: #e74c3c;
+            color: white;
+        }
+
+        .btn:hover {
+            opacity: 0.9;
+            transform: translateY(-1px);
+        }
+
+        .input-group {
+            margin: 15px 0;
+        }
+
+        .input-group label {
+            display: block;
+            margin-bottom: 5px;
+            font-weight: bold;
+            color: #333;
+        }
+
+        .input-group input, .input-group select {
+            width: 100%;
+            padding: 10px;
+            border: 2px solid #ddd;
+            border-radius: 6px;
+            font-size: 16px;
+        }
+
+        .alert {
+            padding: 15px;
+            border-radius: 6px;
+            margin: 15px 0;
+        }
+
+        .alert-info {
+            background: #d1ecf1;
+            border-left: 4px solid #0c5460;
+            color: #0c5460;
+        }
+
+        .alert-success {
+            background: #d4edda;
+            border-left: 4px solid #28a745;
+            color: #155724;
+        }
+
+        .alert-warning {
+            background: #fff3cd;
+            border-left: 4px solid #ffc107;
+            color: #856404;
+        }
+
+        .card {
+            background: #f8f9fa;
+            padding: 20px;
+            border-radius: 8px;
+            margin: 15px 0;
+            border: 2px solid #dee2e6;
+        }
+
+        .role-card {
+            display: inline-block;
+            padding: 10px 20px;
+            margin: 5px;
+            border-radius: 6px;
+            font-weight: bold;
+        }
+
+        .role-card.wolf {
+            background: #e74c3c;
+            color: white;
+        }
+
+        .role-card.good {
+            background: #27ae60;
+            color: white;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 15px 0;
+        }
+
+        table th, table td {
+            padding: 12px;
+            border: 1px solid #ddd;
+            text-align: center;
+        }
+
+        table th {
+            background: #f8f9fa;
+            font-weight: bold;
+        }
+
+        .loading {
+            text-align: center;
+            padding: 40px;
+            font-size: 18px;
+            color: #666;
+        }
+
+        .back-btn {
+            position: absolute;
+            top: 20px;
+            left: 20px;
+            padding: 10px 20px;
+            background: white;
+            border: 2px solid #3498db;
+            color: #3498db;
+            border-radius: 6px;
+            cursor: pointer;
+            font-weight: bold;
+        }
+
+        .back-btn:hover {
+            background: #3498db;
+            color: white;
+        }
+
+        #qrcode {
+            text-align: center;
+            margin: 20px 0;
+        }
+
+        .share-url {
+            background: #f8f9fa;
+            padding: 15px;
+            border-radius: 6px;
+            margin: 10px 0;
+            word-break: break-all;
+            border: 2px dashed #3498db;
+        }
+
+        .share-url strong {
+            color: #3498db;
+            font-size: 18px;
+        }
+
+        .copy-btn {
+            background: #27ae60;
+            color: white;
+            padding: 8px 16px;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            margin-left: 10px;
+        }
+
+        .copy-btn:hover {
+            background: #229954;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <!-- 首页 -->
+        <div id="home-section" class="section active">
+            <div class="header">
+                <h1>🎮 双身份狼人杀 - 云端版</h1>
+                <p style="color: #666; margin-top: 10px;">
+                    ☁️ 云端存储 | 🔐 密码保护 | 📱 跨设备同步
+                </p>
+                <div class="mode-selector">
+                    <button class="mode-btn judge" onclick="selectMode('judge')">
+                        🎯 我是法官
+                    </button>
+                    <button class="mode-btn player" onclick="selectMode('player')">
+                        🎮 我是玩家
+                    </button>
+                </div>
+            </div>
+            
+            <div class="alert alert-info">
+                <strong>✨ 全新云端版特性：</strong><br>
+                • 无需下载，浏览器直接访问<br>
+                • 数据存储在云端，永不丢失<br>
+                • 支持任何设备：手机、平板、电脑<br>
+                • 4位数字密码保护<br>
+                • 实时跨设备同步
+            </div>
+        </div>
+
+        <!-- 法官配置页 -->
+        <div id="judge-config-section" class="section">
+            <button class="back-btn" onclick="goHome()">← 返回</button>
+            
+            <h2>🎯 法官配置游戏</h2>
+            
+            <div class="input-group">
+                <label>玩家人数</label>
+                <input type="number" id="player-count" min="6" max="20" value="10">
+            </div>
+
+            <div class="input-group">
+                <label>游戏会话ID（分享给玩家）</label>
+                <input type="text" id="session-id" readonly>
+                <button class="copy-btn" onclick="copySessionId()">📋 复制</button>
+            </div>
+
+            <div class="card">
+                <h3>玩家访问地址：</h3>
+                <div class="share-url">
+                    <strong id="player-url"></strong>
+                    <button class="copy-btn" onclick="copyPlayerUrl()">📋 复制链接</button>
+                </div>
+            </div>
+
+            <button class="btn btn-success" onclick="generateGame()">
+                🎲 生成游戏并分配身份
+            </button>
+
+            <div id="passwords-section" style="display: none;">
+                <div class="alert alert-warning">
+                    <strong>🔑 玩家密码列表（请告诉玩家）：</strong>
+                    <div id="passwords-list"></div>
+                </div>
+            </div>
+
+            <div id="judge-status" style="display: none;">
+                <h3>📊 玩家选择状态</h3>
+                <div id="status-table"></div>
+                <button class="btn btn-primary" onclick="refreshStatus()">🔄 刷新状态</button>
+            </div>
+        </div>
+
+        <!-- 玩家登录页 -->
+        <div id="player-login-section" class="section">
+            <button class="back-btn" onclick="goHome()">← 返回</button>
+            
+            <h2>🎮 玩家登录</h2>
+            
+            <div class="alert alert-info">
+                <strong>说明：</strong><br>
+                1. 输入法官给你的会话ID<br>
+                2. 输入你的号码和密码<br>
+                3. 查看并选择你的身份牌
+            </div>
+
+            <div class="input-group">
+                <label>游戏会话ID</label>
+                <input type="text" id="player-session-id" placeholder="输入法官给你的会话ID">
+            </div>
+
+            <div class="input-group">
+                <label>你的号码</label>
+                <input type="number" id="player-number" min="1" max="20" placeholder="输入号码（如：1）">
+            </div>
+
+            <div class="input-group">
+                <label>密码</label>
+                <input type="text" id="player-password" maxlength="4" placeholder="输入4位密码">
+            </div>
+
+            <button class="btn btn-success" onclick="playerLogin()">
+                🎴 查看我的身份
+            </button>
+        </div>
+
+        <!-- 玩家选择页 -->
+        <div id="player-selection-section" class="section">
+            <button class="back-btn" onclick="playerLogout()">← 退出登录</button>
+            
+            <h2>🎭 你的身份牌</h2>
+            
+            <div class="alert alert-warning">
+                <strong>⚠️ 请保密！</strong>不要让其他玩家看到你的屏幕！
+            </div>
+
+            <div id="player-cards"></div>
+
+            <div id="selection-area">
+                <h3>选择你的上牌和下牌：</h3>
+                
+                <div class="input-group">
+                    <label>上牌（明牌）</label>
+                    <select id="top-card"></select>
+                </div>
+
+                <div class="input-group">
+                    <label>下牌（暗牌）</label>
+                    <select id="bottom-card"></select>
+                </div>
+
+                <div class="card">
+                    <strong>当前阵营：</strong>
+                    <span id="current-camp"></span>
+                </div>
+
+                <button class="btn btn-success" onclick="confirmSelection()">
+                    ✅ 确认选择
+                </button>
+            </div>
+
+            <div id="confirmed-area" style="display: none;">
+                <div class="alert alert-success">
+                    <strong>✅ 已确认！</strong><br>
+                    你的选择已保存到云端。<br>
+                    等待法官开始游戏...
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // LeanCloud配置
+        const LEANCLOUD_CONFIG = {
+            appId: 'QS8uzJ0ZPkhrjSBlepFgow3B-gzGzoHsz',
+            appKey: 'YVLqKet5nB8wcRVYWAGkUMNL',
+            serverURL: 'https://qs8uzj0z.lc-cn-n1-shared.com'
+        };
+
+        // 初始化LeanCloud
+        AV.init({
+            appId: LEANCLOUD_CONFIG.appId,
+            appKey: LEANCLOUD_CONFIG.appKey,
+            serverURL: LEANCLOUD_CONFIG.serverURL
+        });
+
+        // 角色定义
+        const ROLES = {
+            wolf: { name: '普通狼人', camp: 'wolf', emoji: '🐺' },
+            seer: { name: '预言家', camp: 'good', emoji: '🔮' },
+            witch: { name: '女巫', camp: 'good', emoji: '🧙' },
+            hunter: { name: '猎人', camp: 'good', emoji: '🏹' },
+            guard: { name: '守卫', camp: 'good', emoji: '🛡️' },
+            villager: { name: '村民', camp: 'good', emoji: '👤' }
+        };
+
+        let currentMode = null;
+        let currentPlayer = {
+            sessionId: null,
+            number: null,
+            cards: [],
+            topCard: null,
+            bottomCard: null
+        };
+
+        // 生成随机密码
+        function generatePassword() {
+            return Math.floor(1000 + Math.random() * 9000).toString();
+        }
+
+        // 生成会话ID
+        function generateSessionId() {
+            return Date.now().toString(36) + Math.random().toString(36).substr(2, 5).toUpperCase();
+        }
+
+        // 选择模式
+        function selectMode(mode) {
+            currentMode = mode;
+            hideAll();
+            
+            if (mode === 'judge') {
+                document.getElementById('judge-config-section').classList.add('active');
+                const sessionId = generateSessionId();
+                document.getElementById('session-id').value = sessionId;
+                updatePlayerUrl(sessionId);
+            } else {
+                document.getElementById('player-login-section').classList.add('active');
+                // 检查URL参数
+                const urlParams = new URLSearchParams(window.location.search);
+                const sessionId = urlParams.get('session');
+                if (sessionId) {
+                    document.getElementById('player-session-id').value = sessionId;
+                }
+            }
+        }
+
+        // 更新玩家URL
+        function updatePlayerUrl(sessionId) {
+            const baseUrl = window.location.origin + window.location.pathname;
+            const playerUrl = `${baseUrl}?mode=player&session=${sessionId}`;
+            document.getElementById('player-url').textContent = playerUrl;
+        }
+
+        // 复制会话ID
+        function copySessionId() {
+            const sessionId = document.getElementById('session-id').value;
+            navigator.clipboard.writeText(sessionId).then(() => {
+                alert('✅ 会话ID已复制！');
+            });
+        }
+
+        // 复制玩家链接
+        function copyPlayerUrl() {
+            const url = document.getElementById('player-url').textContent;
+            navigator.clipboard.writeText(url).then(() => {
+                alert('✅ 玩家链接已复制！发给玩家即可。');
+            });
+        }
+
+        // 生成游戏
+        async function generateGame() {
+            const playerCount = parseInt(document.getElementById('player-count').value);
+            const sessionId = document.getElementById('session-id').value;
+
+            if (!playerCount || playerCount < 6) {
+                alert('❌ 玩家人数至少6人！');
+                return;
+            }
+
+            // 简化配置：固定角色
+            const roles = ['wolf', 'wolf', 'seer', 'witch', 'hunter', 'guard'];
+            while (roles.length < playerCount) {
+                roles.push('villager');
+            }
+
+            // 随机打乱
+            for (let i = roles.length - 1; i > 0; i--) {
+                const j = Math.floor(Math.random() * (i + 1));
+                [roles[i], roles[j]] = [roles[j], roles[i]];
+            }
+
+            // 分配身份（每人2张）
+            const distributions = {};
+            const passwords = {};
+            
+            for (let i = 1; i <= playerCount; i++) {
+                const idx1 = (i - 1) * 2;
+                const idx2 = idx1 + 1;
+                
+                if (idx2 < roles.length) {
+                    distributions[i] = {
+                        cards: [roles[idx1], roles[idx2]]
+                    };
+                } else {
+                    distributions[i] = {
+                        cards: [roles[idx1], 'villager']
+                    };
+                }
+                
+                passwords[i] = generatePassword();
+            }
+
+            // 保存到云端
+            const GameSession = AV.Object.extend('GameSession');
+            const gameSession = new GameSession();
+            
+            gameSession.set('sessionId', sessionId);
+            gameSession.set('data', {
+                sessionId: sessionId,
+                playerCount: playerCount,
+                distributions: distributions,
+                passwords: passwords,
+                selections: {},
+                timestamp: Date.now()
+            });
+
+            try {
+                await gameSession.save();
+                console.log('✅ 游戏数据已保存到云端');
+                
+                // 显示密码
+                let passwordHtml = '<table><tr><th>号码</th><th>密码</th><th>身份</th></tr>';
+                for (let i = 1; i <= playerCount; i++) {
+                    const cards = distributions[i].cards.map(r => ROLES[r].emoji + ROLES[r].name).join('、');
+                    passwordHtml += `<tr><td>${i}号</td><td><strong>${passwords[i]}</strong></td><td>${cards}</td></tr>`;
+                }
+                passwordHtml += '</table>';
+                
+                document.getElementById('passwords-list').innerHTML = passwordHtml;
+                document.getElementById('passwords-section').style.display = 'block';
+                document.getElementById('judge-status').style.display = 'block';
+                
+                alert('✅ 游戏生成成功！\n\n请将会话ID和链接分享给玩家。\n点击"查看密码"告诉每个玩家他们的密码。');
+                
+                refreshStatus();
+            } catch (error) {
+                console.error('保存失败:', error);
+                alert('❌ 保存失败：' + error.message);
+            }
+        }
+
+        // 刷新状态
+        async function refreshStatus() {
+            const sessionId = document.getElementById('session-id').value;
+            
+            try {
+                const query = new AV.Query('GameSession');
+                query.equalTo('sessionId', sessionId);
+                const result = await query.first();
+                
+                if (!result) {
+                    alert('❌ 未找到游戏会话！');
+                    return;
+                }
+                
+                const data = result.get('data');
+                const selections = data.selections || {};
+                const playerCount = data.playerCount;
+                
+                let html = '<table><tr><th>号码</th><th>状态</th><th>选择</th></tr>';
+                let confirmed = 0;
+                
+                for (let i = 1; i <= playerCount; i++) {
+                    const selection = selections[i];
+                    const status = selection && selection.confirmed ? '✅ 已完成' : '⏳ 等待中';
+                    const choice = selection && selection.confirmed ? 
+                        `上：${ROLES[selection.top].name}，下：${ROLES[selection.bottom].name}` : '-';
+                    
+                    html += `<tr><td>${i}号</td><td>${status}</td><td>${choice}</td></tr>`;
+                    
+                    if (selection && selection.confirmed) confirmed++;
+                }
+                
+                html += '</table>';
+                html += `<p><strong>进度：${confirmed}/${playerCount}</strong></p>`;
+                
+                if (confirmed === playerCount) {
+                    html += '<div class="alert alert-success"><strong>✅ 所有玩家已完成选择！可以开始游戏了！</strong></div>';
+                }
+                
+                document.getElementById('status-table').innerHTML = html;
+            } catch (error) {
+                console.error('刷新失败:', error);
+                alert('❌ 刷新失败：' + error.message);
+            }
+        }
+
+        // 玩家登录
+        async function playerLogin() {
+            const sessionId = document.getElementById('player-session-id').value.trim();
+            const number = parseInt(document.getElementById('player-number').value);
+            const password = document.getElementById('player-password').value.trim();
+
+            if (!sessionId) {
+                alert('❌ 请输入会话ID！');
+                return;
+            }
+
+            if (!number || number < 1) {
+                alert('❌ 请输入有效的号码！');
+                return;
+            }
+
+            if (!password || password.length !== 4) {
+                alert('❌ 请输入4位密码！');
+                return;
+            }
+
+            try {
+                const query = new AV.Query('GameSession');
+                query.equalTo('sessionId', sessionId);
+                const result = await query.first();
+
+                if (!result) {
+                    alert('❌ 会话ID不存在！\n请检查是否输入正确。');
+                    return;
+                }
+
+                const data = result.get('data');
+                
+                // 验证号码和密码
+                if (!data.passwords[number]) {
+                    alert('❌ 号码不存在！');
+                    return;
+                }
+
+                if (data.passwords[number] !== password) {
+                    alert('❌ 密码错误！\n请重新输入。');
+                    return;
+                }
+
+                // 登录成功
+                currentPlayer.sessionId = sessionId;
+                currentPlayer.number = number;
+                currentPlayer.cards = data.distributions[number].cards;
+                currentPlayer.gameData = data;
+                currentPlayer.gameObject = result;
+
+                showPlayerSelection();
+            } catch (error) {
+                console.error('登录失败:', error);
+                alert('❌ 登录失败：' + error.message);
+            }
+        }
+
+        // 显示玩家选择界面
+        function showPlayerSelection() {
+            hideAll();
+            document.getElementById('player-selection-section').classList.add('active');
+
+            // 显示牌
+            const cards = currentPlayer.cards;
+            let html = '<div class="alert alert-info"><h3>你分到的牌：</h3>';
+            cards.forEach(roleId => {
+                const role = ROLES[roleId];
+                const campClass = role.camp === 'wolf' ? 'wolf' : 'good';
+                html += `<div class="role-card ${campClass}">${role.emoji} ${role.name}</div>`;
+            });
+            html += '</div>';
+            document.getElementById('player-cards').innerHTML = html;
+
+            // 检查是否已选择
+            const selection = currentPlayer.gameData.selections[currentPlayer.number];
+            if (selection && selection.confirmed) {
+                document.getElementById('selection-area').style.display = 'none';
+                document.getElementById('confirmed-area').style.display = 'block';
+                return;
+            }
+
+            // 填充下拉框
+            const topSelect = document.getElementById('top-card');
+            const bottomSelect = document.getElementById('bottom-card');
+            
+            topSelect.innerHTML = '<option value="">请选择</option>';
+            bottomSelect.innerHTML = '<option value="">请选择</option>';
+            
+            cards.forEach(roleId => {
+                const role = ROLES[roleId];
+                topSelect.innerHTML += `<option value="${roleId}">${role.emoji} ${role.name}</option>`;
+                bottomSelect.innerHTML += `<option value="${roleId}">${role.emoji} ${role.name}</option>`;
+            });
+
+            // 监听选择变化
+            topSelect.onchange = updateCamp;
+            bottomSelect.onchange = updateCamp;
+        }
+
+        // 更新阵营显示
+        function updateCamp() {
+            const topCard = document.getElementById('top-card').value;
+            const bottomCard = document.getElementById('bottom-card').value;
+
+            if (!topCard || !bottomCard) {
+                document.getElementById('current-camp').textContent = '-';
+                return;
+            }
+
+            const topRole = ROLES[topCard];
+            const topCamp = topRole.camp === 'wolf' ? '狼人阵营 🐺' : '好人阵营 👥';
+            
+            document.getElementById('current-camp').innerHTML = `<span class="role-card ${topRole.camp === 'wolf' ? 'wolf' : 'good'}">${topCamp}</span>`;
+        }
+
+        // 确认选择
+        async function confirmSelection() {
+            const topCard = document.getElementById('top-card').value;
+            const bottomCard = document.getElementById('bottom-card').value;
+
+            if (!topCard || !bottomCard) {
+                alert('❌ 请选择上牌和下牌！');
+                return;
+            }
+
+            if (topCard === bottomCard) {
+                alert('❌ 上牌和下牌不能相同！');
+                return;
+            }
+
+            const topRole = ROLES[topCard];
+            const bottomRole = ROLES[bottomCard];
+            
+            if (!confirm(`确认你的选择？\n\n上牌：${topRole.emoji} ${topRole.name}\n下牌：${bottomRole.emoji} ${bottomRole.name}\n\n确认后无法修改！`)) {
+                return;
+            }
+
+            // 更新云端数据
+            try {
+                const data = currentPlayer.gameData;
+                data.selections[currentPlayer.number] = {
+                    top: topCard,
+                    bottom: bottomCard,
+                    confirmed: true
+                };
+                
+                currentPlayer.gameObject.set('data', data);
+                await currentPlayer.gameObject.save();
+
+                document.getElementById('selection-area').style.display = 'none';
+                document.getElementById('confirmed-area').style.display = 'block';
+                
+                alert('✅ 选择已保存！\n等待法官开始游戏...');
+            } catch (error) {
+                console.error('保存失败:', error);
+                alert('❌ 保存失败：' + error.message);
+            }
+        }
+
+        // 玩家登出
+        function playerLogout() {
+            currentPlayer = {
+                sessionId: null,
+                number: null,
+                cards: [],
+                topCard: null,
+                bottomCard: null
+            };
+            goHome();
+        }
+
+        // 返回首页
+        function goHome() {
+            hideAll();
+            document.getElementById('home-section').classList.add('active');
+        }
+
+        // 隐藏所有section
+        function hideAll() {
+            document.querySelectorAll('.section').forEach(s => s.classList.remove('active'));
+        }
+
+        // 页面加载时检查URL参数
+        window.addEventListener('DOMContentLoaded', () => {
+            const urlParams = new URLSearchParams(window.location.search);
+            const mode = urlParams.get('mode');
+            
+            if (mode === 'player') {
+                selectMode('player');
+            } else if (mode === 'judge') {
+                selectMode('judge');
+            }
+            
+            console.log('✅ LeanCloud已初始化');
+        });
+    </script>
+</body>
+</html>
