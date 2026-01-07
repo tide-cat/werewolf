@@ -2911,10 +2911,8 @@ function settleDayPhase() {
 }
 
 // 重新开始游戏
-function restartGame()
-{
+function restartGame() {
     stopCloudSync();
- {
     if (confirm('确定要重新开始游戏吗？所有进度将丢失！')) {
         location.reload();
     }
