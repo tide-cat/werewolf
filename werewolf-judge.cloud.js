@@ -832,9 +832,11 @@ function renderAssignSection() {
         `;
         container.appendChild(playerLinkDiv);
         
-        // 设置玩家端URL
-        const playerUrl = window.location.href.replace('werewolf-judge.html', 'werewolf-player.html');
-        document.getElementById('player-url').textContent = playerUrl;
+        // 设置玩家端URL（玩家端应当是 player.html，并携带 session 参数）
+        const baseUrl = window.location.origin + window.location.pathname.replace(/[^\/]*$/, '');
+        const playerUrl = baseUrl + 'player.html?session=' + encodeURIComponent(gameState.sessionId || '');
+        const playerUrlEl = document.getElementById('player-url');
+        if (playerUrlEl) playerUrlEl.textContent = playerUrl;
         
         // 玩家状态显示区域
         const statusDiv = document.createElement('div');
@@ -2911,8 +2913,10 @@ function settleDayPhase() {
 }
 
 // 重新开始游戏
-function restartGame() {
+function restartGame()
+{
     stopCloudSync();
+ {
     if (confirm('确定要重新开始游戏吗？所有进度将丢失！')) {
         location.reload();
     }
