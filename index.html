@@ -510,7 +510,8 @@
 
             // 简化配置：固定角色
             const roles = ['wolf', 'wolf', 'seer', 'witch', 'hunter', 'guard'];
-            while (roles.length < playerCount) {
+            // 修复：需要 playerCount * 2 张牌（每人2张）
+            while (roles.length < playerCount * 2) {
                 roles.push('villager');
             }
 
@@ -528,15 +529,9 @@
                 const idx1 = (i - 1) * 2;
                 const idx2 = idx1 + 1;
                 
-                if (idx2 < roles.length) {
-                    distributions[i] = {
-                        cards: [roles[idx1], roles[idx2]]
-                    };
-                } else {
-                    distributions[i] = {
-                        cards: [roles[idx1], 'villager']
-                    };
-                }
+                distributions[i] = {
+                    cards: [roles[idx1], roles[idx2]]
+                };
                 
                 passwords[i] = generatePassword();
             }
