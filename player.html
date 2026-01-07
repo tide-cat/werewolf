@@ -1,0 +1,275 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>双身份狼人杀 - 玩家端</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+            color: #333;
+        }
+        
+        .container {
+            max-width: 500px;
+            margin: 0 auto;
+        }
+        
+        .header {
+            text-align: center;
+            color: white;
+            margin-bottom: 30px;
+        }
+        
+        .header h1 {
+            font-size: 24px;
+            margin-bottom: 10px;
+        }
+        
+        .card {
+            background: white;
+            border-radius: 15px;
+            padding: 25px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.3);
+            margin-bottom: 20px;
+        }
+        
+        .input-group {
+            margin-bottom: 20px;
+        }
+        
+        .input-group label {
+            display: block;
+            font-weight: 600;
+            margin-bottom: 8px;
+            color: #555;
+        }
+        
+        .input-group input,
+        .input-group select {
+            width: 100%;
+            padding: 12px;
+            border: 2px solid #ddd;
+            border-radius: 8px;
+            font-size: 16px;
+            transition: border-color 0.3s;
+        }
+        
+        .input-group input:focus,
+        .input-group select:focus {
+            outline: none;
+            border-color: #667eea;
+        }
+        
+        .btn {
+            width: 100%;
+            padding: 14px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+            border-radius: 8px;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: transform 0.2s;
+        }
+        
+        .btn:hover {
+            transform: translateY(-2px);
+        }
+        
+        .btn:active {
+            transform: translateY(0);
+        }
+        
+        .btn:disabled {
+            background: #ccc;
+            cursor: not-allowed;
+        }
+        
+        .role-card {
+            background: #f8f9fa;
+            border: 2px solid #ddd;
+            border-radius: 10px;
+            padding: 20px;
+            text-align: center;
+            margin-bottom: 15px;
+        }
+        
+        .role-card.wolf {
+            background: #ffe6e6;
+            border-color: #e74c3c;
+        }
+        
+        .role-card.good {
+            background: #e6f7ff;
+            border-color: #3498db;
+        }
+        
+        .role-name {
+            font-size: 24px;
+            font-weight: bold;
+            margin-bottom: 5px;
+        }
+        
+        .role-desc {
+            font-size: 14px;
+            color: #666;
+        }
+        
+        .alert {
+            padding: 15px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+        }
+        
+        .alert-info {
+            background: #d1ecf1;
+            border-left: 4px solid #0c5460;
+            color: #0c5460;
+        }
+        
+        .alert-success {
+            background: #d4edda;
+            border-left: 4px solid #155724;
+            color: #155724;
+        }
+        
+        .alert-warning {
+            background: #fff3cd;
+            border-left: 4px solid #856404;
+            color: #856404;
+        }
+        
+        .alert-danger {
+            background: #f8d7da;
+            border-left: 4px solid #721c24;
+            color: #721c24;
+        }
+        
+        .selection-area {
+            margin-top: 20px;
+        }
+        
+        .fixed-indicator {
+            background: #fff3cd;
+            border-left: 4px solid #ffc107;
+            padding: 10px;
+            border-radius: 5px;
+            margin-bottom: 15px;
+            color: #856404;
+        }
+        
+        #login-section, #selection-section {
+            display: none;
+        }
+        
+        #login-section.active, #selection-section.active {
+            display: block;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>🎮 双身份狼人杀</h1>
+            <p>玩家端 - 查看身份并选择上下牌</p>
+        </div>
+        
+        <!-- 登录界面 -->
+        <div id="login-section" class="active">
+            <div class="card">
+                <h2 style="margin-bottom: 20px;">🔐 输入号码和密码</h2>
+                
+                <div class="alert alert-info">
+                    <strong>说明：</strong><br>
+                    1. 输入你抽到的号码<br>
+                    2. 输入法官告诉你的密码<br>
+                    3. 点击"查看我的身份"
+                </div>
+                
+                <div class="input-group">
+                    <label for="player-number">号码</label>
+                    <input type="number" id="player-number" placeholder="输入号码（如：1）" min="1" max="20">
+                </div>
+                
+                <div class="input-group">
+                    <label for="player-password">密码</label>
+                    <input type="text" id="player-password" placeholder="输入密码（4位数字）" maxlength="4">
+                </div>
+                
+                <button class="btn" onclick="login()">🎴 查看我的身份</button>
+            </div>
+        </div>
+        
+        <!-- 选择界面 -->
+        <div id="selection-section">
+            <div class="card">
+                <h2 style="margin-bottom: 20px;">🎭 你的身份牌</h2>
+                
+                <div class="alert alert-warning">
+                    <strong>⚠️ 请保密！</strong><br>
+                    不要让其他玩家看到你的屏幕！
+                </div>
+                
+                <div id="player-info"></div>
+                
+                <div id="cards-display"></div>
+                
+                <div id="selection-area" class="selection-area">
+                    <div class="input-group">
+                        <label for="top-card">上牌（第一身份）</label>
+                        <select id="top-card">
+                            <option value="">请选择</option>
+                        </select>
+                    </div>
+                    
+                    <div class="input-group">
+                        <label for="bottom-card">下牌（第二身份）</label>
+                        <select id="bottom-card">
+                            <option value="">请选择</option>
+                        </select>
+                    </div>
+                    
+                    <div id="camp-display" style="margin: 15px 0; padding: 10px; border-radius: 5px; text-align: center; font-weight: bold;"></div>
+                    
+                    <button class="btn" onclick="confirmSelection()">✅ 确认选择</button>
+                </div>
+                
+                <div id="confirmed-message" style="display: none;">
+                    <div class="alert alert-success">
+                        <strong>✅ 选择已确认！</strong><br>
+                        法官已收到你的选择。<br>
+                        请等待游戏开始。
+                    </div>
+                    <button class="btn" onclick="logout()" style="background: #6c757d;">🔙 返回</button>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    
+    <!-- LeanCloud SDK（云端同步） -->
+    <script src="https://cdn.jsdelivr.net/npm/leancloud-storage@4.15.2/dist/av-min.js"></script>
+    <script>
+      // 这里填你的 LeanCloud 配置（目前你已经在旧云端版里用过同一套）
+      window.LEANCLOUD_CONFIG = {
+        appId: 'QS8uzJ0ZPkhrjSBlepFgow3B-gzGzoHsz',
+        appKey: 'YVLqKet5nB8wcRVYWAGkUMNL',
+        serverURL: 'https://qs8uzj0z.lc-cn-n1-shared.com'
+      };
+    </script>
+    <script src="cloud-storage.js"></script>
+
+    <script src="werewolf-player.cloud.js"></script>
+</body>
+</html>
